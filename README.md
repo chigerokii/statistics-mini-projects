@@ -1,42 +1,48 @@
-# Статистика для бизнеса: мини-проекты
+# Статистика для бизнеса: два небольших проекта
 
-🇷🇺 Русский · [🇬🇧 English](#-english)
+Учебные задачи с 3 курса СПбГЭУ, на которых я отрабатывал A/B-тесты и оценку риска.
 
-Два компактных учебных проекта с прикладной статистикой: A/B-тест и оценка риска.
+[English version below](#english)
 
-| Проект | Задача | Методы | Результат |
-|---|---|---|---|
-| [A/B-тест: средний чек и ARPU](ab-test-average-check/ab_test_average_check.ipynb) | Повлияло ли изменение на средний чек? | Проверка корректности сплита (баланс групп, дубликаты, пересечения пользователей), выбросы по IQR, отчёт по метрикам, t-тест | ARPU 2,02 vs 2,04, p = 0,67: эффекта нет |
-| [Меры риска в автостраховании](insurance-risk-measures/insurance_risk_measures.ipynb) | Какие группы клиентов самые рисковые для страховщика? | Дисперсия, СКО, положительная и отрицательная полудисперсия, максимальный ущерб, рисковый капитал (VaR 95%) | Женщины и штат 07 рискованнее остальных групп. Лучшая мера в этой задаче — рисковый капитал |
+## 1. A/B-тест: повлияло ли изменение на средний чек
 
-## A/B-тест: средний чек и ARPU
+[Ноутбук](ab-test-average-check/ab_test_average_check.ipynb) · 10 тыс. заказов, группы `control` и `variant`.
 
-- **Данные:** ~10 тыс. заказов, группы `control` и `variant`.
-- **Проверка сплита:** группы сбалансированы, дубликаты удалены, пользователи, попавшие в обе группы, исключены. Это частая ошибка, которую важно ловить до расчёта метрик.
-- **Метрики:** total_orders, total_revenue, unique_users, ARPU, средний чек.
-- **Вывод:** различий нет (p = 0,67), раскатывать изменение по этой метрике нет оснований.
+Сначала проверил, что тесту можно доверять: группы примерно равны, дубликаты удалены, а пользователи, попавшие в обе группы, исключены. Это частая ошибка, и её важно найти до того, как считать метрики. Потом убрал выбросы по правилу 1,5 IQR и посчитал метрики:
 
-## Меры риска в автостраховании
+| Группа | Заказы | Пользователи | ARPU | Средний чек |
+|---|---|---|---|---|
+| control | 3 005 | 2 379 | 2,02 | 1,60 |
+| variant | 3 026 | 2 387 | 2,04 | 1,61 |
 
-- **Данные:** 6 773 страховые выплаты: штат, рисковый класс, пол, возраст, сумма выплаты.
-- Своя функция для **положительной и отрицательной полудисперсии** (во встроенных библиотеках её нет), сводные таблицы мер риска по полу и по штатам.
-- **Выводы:** по всем мерам женщины — более рисковая группа. Среди штатов лидирует STATE 07: 4 из 6 мер риска у него максимальные. Для страховщика лучшей мерой выбран **рисковый капитал (95%-я квантиль выплат)**: он описывает возможные потери с заданной вероятностью и устойчив к выбросам.
+**Вывод: изменение на средний чек не повлияло.** t-тест даёт p = 0,67. Bootstrap-интервал для разницы средних чеков содержит ноль: от −0,03 до +0,05, то есть возможный эффект в пределах ±3%. Раскатывать изменение ради роста чека нет смысла.
 
-## Стек
+![A/B-тест](images/ab_test.png)
 
-Python · pandas · NumPy · SciPy · seaborn
+## 2. Меры риска в автостраховании
 
-```bash
-pip install pandas numpy scipy seaborn matplotlib openpyxl jupyter
-```
+[Ноутбук](insurance-risk-measures/insurance_risk_measures.ipynb) · 6 773 страховые выплаты: штат, рисковый класс, пол, возраст, сумма.
+
+Задача: понять, какие группы клиентов самые рисковые для страховщика и какой мерой риска пользоваться. Посчитал дисперсию, СКО, положительную и отрицательную полудисперсию (своей функцией, в библиотеках её нет), максимальный ущерб и VaR 95% по полу и по штатам.
+
+**Вывод 1: выбор меры риска меняет ответ.** По дисперсии и СКО «лидирует» штат 07, но только из-за единичных огромных выплат: там максимальная выплата 60 тыс. $. По VaR 95%, то есть по уровню выплаты, который превышают лишь 5% случаев, самый рисковый штат 12, а 07 в середине списка. Для страховщика VaR полезнее: он устойчив к единичным выбросам и прямо отвечает на вопрос, к каким выплатам надо быть готовым.
+
+![VaR по штатам](images/var_by_state.png)
+
+**Вывод 2: пол почти не влияет.** У женщин все меры риска выше, но разница всего 1–8%, а средняя выплата отличается на 1%. Для тарифа пол слабый фактор, штат важнее.
+
+![Риск по полу](images/risk_by_gender.png)
+
+## Файлы
+
+`scripts/make_figures.py` строит графики для этого README. Данные лежат в папках `data/` внутри каждого проекта.
+
+Python, pandas, NumPy, SciPy, matplotlib.
 
 ---
 
-## 🇬🇧 English
+## English
 
-**Business statistics: two mini-projects**
+**A/B test on average order value.** After validating the split (balance, duplicates, users exposed to both variants) and removing outliers, there is no effect: p = 0.67, and the bootstrap 95% CI for the difference is −0.03 to +0.05.
 
-- **A/B test on average order value and ARPU.** Validated the split (group balance, duplicates, users exposed to both variants), removed outliers with the IQR rule, built a metrics report and ran a t-test. ARPU was 2.02 vs 2.04 with p = 0.67, so there is no significant effect.
-- **Risk measures in car insurance.** 6,773 claims; variance, standard deviation, upper and lower semivariance (custom function), maximum loss and VaR at 95%, compared by gender and state. Female policyholders and state 07 are the riskiest groups. VaR was chosen as the most suitable measure because it is robust to outliers and directly interpretable as a loss level.
-
-**Stack:** Python, pandas, NumPy, SciPy, seaborn.
+**Risk measures in car insurance (6,773 claims).** The choice of risk measure changes the answer. Variance points to state 07, but only because of a few extreme claims, while VaR 95% points to state 12, which makes VaR the better measure for an insurer. Differences by gender are small (1–8%).
